@@ -95,8 +95,8 @@ class OtherRoom extends React.Component<IOtherRoomProps, IState>
             duration: Constants.DurationArray,
             selectedRoom: null,
             selectedDuration: null,
-            meetingStart: null,
-            meetingEnd: null,
+            meetingStart: moment().format("YYYY-MM-DDTHH:mm"),
+            meetingEnd: moment().add(30,'minutes').format("YYYY-MM-DDTHH:mm"),
             loading: false,
             searchQuery: undefined,
             message: null,
@@ -339,14 +339,18 @@ class OtherRoom extends React.Component<IOtherRoomProps, IState>
     /**Get list of top N rooms to display in dropdown on click. */
     getTopNRooms = async () => {
         let self = this;
-        let timeStart = moment(new Date(this.state.meetingStart)).utc()
+        let timeStart = moment.tz(this.state.meetingStart,self.state.selectedTimeZone).utc()
         
         let timeStartFmt = timeStart.format("YYYY-MM-DD HH:mm:ss");
+        
         console.log("meeting start:"+timeStartFmt);
         
-        let timeEnd =  moment(new Date(this.state.meetingEnd)).utc();
+        let timeEnd =  moment.tz(this.state.meetingEnd,self.state.selectedTimeZone).utc();
         let timeEndFmt = timeEnd.format("YYYY-MM-DD HH:mm:ss");
         console.log("meeting end:"+timeEndFmt);
+
+        console.log("meeting start source:"+this.state.meetingStart);
+        console.log("meeting end source:"+this.state.meetingEnd);
 
         let meetingDuration = timeEnd.diff(timeStart,"minutes");
         console.log("meeting duration:"+meetingDuration);
@@ -394,14 +398,17 @@ class OtherRoom extends React.Component<IOtherRoomProps, IState>
     filterRooms = async (inputValue: string) => {
         let self = this;
         
-        let timeStart = moment(new Date(this.state.meetingStart)).utc()
+        let timeStart = moment.tz(this.state.meetingStart,self.state.selectedTimeZone).utc()
         
         let timeStartFmt = timeStart.format("YYYY-MM-DD HH:mm:ss");
         console.log("meeting start:"+timeStartFmt);
         
-        let timeEnd =  moment(new Date(this.state.meetingEnd)).utc();
+        let timeEnd =  moment.tz(this.state.meetingEnd,self.state.selectedTimeZone).utc();
         let timeEndFmt = timeEnd.format("YYYY-MM-DD HH:mm:ss");
         console.log("meeting end:"+timeEndFmt);
+
+        console.log("meeting start source:"+this.state.meetingStart);
+        console.log("meeting end source:"+this.state.meetingEnd);
 
         let meetingDuration = timeEnd.diff(timeStart,"minutes");
         console.log("meeting duration:"+meetingDuration);
@@ -533,10 +540,12 @@ class OtherRoom extends React.Component<IOtherRoomProps, IState>
 
 handleMeetingStartChange = (e:any) => {
                     this.setState({ meetingStart: e.target.value });
+                    this.getTopNRooms();
     }
 
 handleMeetingEndChange = (e:any) => {
                     this.setState({ meetingEnd: e.target.value });
+                    this.getTopNRooms();
     }
 
     /**
@@ -577,14 +586,17 @@ handleMeetingEndChange = (e:any) => {
             if (selectedRoom.Status === Constants.Available) {
                         this.setState({ loading: true });
                 
-                        let timeStart = moment(new Date(this.state.meetingStart)).utc()
+                        let timeStart = moment.tz(this.state.meetingStart,this.state.selectedTimeZone).utc()
         
                         let timeStartFmt = timeStart.format("YYYY-MM-DD HH:mm:ss");
                         console.log("meeting start:"+timeStartFmt);
                         
-                        let timeEnd =  moment(new Date(this.state.meetingEnd)).utc();
+                        let timeEnd =  moment.tz(this.state.meetingEnd,this.state.selectedTimeZone).utc();
                         let timeEndFmt = timeEnd.format("YYYY-MM-DD HH:mm:ss");
                         console.log("meeting end:"+timeEndFmt);
+
+                        console.log("meeting start source:"+this.state.meetingStart);
+                        console.log("meeting end source:"+this.state.meetingEnd);
                 
                         let meetingDuration = timeEnd.diff(timeStart,"minutes");
                         console.log("meeting duration:"+meetingDuration);

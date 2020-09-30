@@ -203,7 +203,7 @@ class OtherRoom extends React.Component<IOtherRoomProps, IState>
         }
         else {
             this.appInsights.trackTrace({ message: `'GetResourceStringsAsync' - Request failed:${resourceStrings.status}`, severityLevel: SeverityLevel.Warning });
-            this.setMessage("Something went wrong and I can’t do that right now. Try again in a few minutes.", Constants.ErrorMessageRedColor, false);
+            this.setMessage("Something went wrong and I canï¿½t do that right now. Try again in a few minutes.", Constants.ErrorMessageRedColor, false);
         }
     }
 
@@ -482,6 +482,7 @@ class OtherRoom extends React.Component<IOtherRoomProps, IState>
      */
     handleDurationChange = (optionSelected: any) => {
         this.setState({ selectedDuration: optionSelected });
+        this.getTopNRooms();
     }
 
     /**

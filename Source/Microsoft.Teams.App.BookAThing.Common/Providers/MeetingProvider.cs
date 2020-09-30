@@ -121,6 +121,10 @@ namespace Microsoft.Teams.Apps.BookAThing.Common.Providers
         /// <returns>Schedule of given rooms.</returns>
         public async Task<RoomScheduleResponse> GetRoomsScheduleAsync(ScheduleRequest scheduleRequest, string token)
         {
+            // fix issue overloap
+            scheduleRequest.StartDateTime.DateTime = scheduleRequest.StartDateTime.DateTime.AddSeconds(1);
+            scheduleRequest.EndDateTime.DateTime = scheduleRequest.EndDateTime.DateTime.AddSeconds(1);
+
             var payload = JsonConvert.SerializeObject(scheduleRequest);
             Dictionary<string, string> header = new Dictionary<string, string>
             {

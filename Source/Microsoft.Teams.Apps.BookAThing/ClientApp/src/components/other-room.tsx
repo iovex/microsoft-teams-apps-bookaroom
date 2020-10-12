@@ -14,6 +14,7 @@ import * as Constants from "../constants";
 import { ApplicationInsights, SeverityLevel } from '@microsoft/applicationinsights-web';
 import { ReactPlugin, withAITracking } from '@microsoft/applicationinsights-react-js';
 import { createBrowserHistory } from "history";
+
 let moment = require("moment");
 import * as timezone from 'moment-timezone';
 const browserHistory = createBrowserHistory({ basename: '' });
@@ -628,8 +629,27 @@ class OtherRoom extends React.Component<IOtherRoomProps, IState>
                     this.appInsights.trackEvent({ name: `Meeting created` }, { User: this.userObjectIdentifier, Room: selectedRoom.RowKey });
                     let response = await res.json();
                     if (response !== null) {
-                        let toBot = { MeetingId: response.id, WebLink: response.webLink, RoomName: selectedRoom.RoomName, RoomEmail: selectedRoom.RowKey, BuildingName: selectedRoom.BuildingName, StartDateTime: response.start.timeZone, EndDateTime: response.end.timeZone, Text: "meeting from task module", isFavourite: false, replyTo: this.replyTo, BuildingEmail: selectedRoom.PartitionKey };
-                        microsoftTeams.tasks.submitTask(toBot);
+
+                        microsoftTeams.getContext(async (context) => {
+                            console.log("hostClientType:" + context.hostClientType);
+                            if (context.hostClientType === "ios") {
+                                let toBotIOS = { MeetingId: response.id, WebLink: response.webLink, RoomName: selectedRoom.RoomName, RoomEmail: selectedRoom.RowKey, BuildingName: selectedRoom.BuildingName, StartDateTime: response.start.timeZone, EndDateTime: response.end.timeZone, Text: "meeting from task module", isFavourite: false, replyTo: this.replyTo, BuildingEmail: selectedRoom.PartitionKey, UserAdObjectId: context.userObjectId };
+                                const resIOS = await fetch("/api/NotifyApi/SubmitTaskForIOS", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "Authorization": "Bearer " + this.token
+                                    },
+                                    body: JSON.stringify(toBotIOS)
+                                });
+
+                                if (resIOS.status === 200) {
+                                    console.log("sucess to submit ios task");
+                                }
+                            }
+                            let toBot = { MeetingId: response.id, WebLink: response.webLink, RoomName: selectedRoom.RoomName, RoomEmail: selectedRoom.RowKey, BuildingName: selectedRoom.BuildingName, StartDateTime: response.start.timeZone, EndDateTime: response.end.timeZone, Text: "meeting from task module", isFavourite: false, replyTo: this.replyTo, BuildingEmail: selectedRoom.PartitionKey };
+                            microsoftTeams.tasks.submitTask(toBot);
+                        });
                     }
                     else {
                         this.setMessage(this.state.resourceStrings.ExceptionResponse, Constants.ErrorMessageRedColor, false);

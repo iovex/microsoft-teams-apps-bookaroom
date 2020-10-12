@@ -5,6 +5,7 @@
 namespace Microsoft.Teams.Apps.BookAThing.Bots
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
@@ -99,6 +100,8 @@ namespace Microsoft.Teams.Apps.BookAThing.Bots
         /// </summary>
         private readonly IMeetingHelper meetingHelper;
 
+        private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BookAMeetingBot{T}"/> class.
         /// </summary>
@@ -115,7 +118,7 @@ namespace Microsoft.Teams.Apps.BookAThing.Bots
         /// <param name="instrumentationKey">Instrumentation key for application insights logging.</param>
         /// <param name="tenantId">Valid tenant id for which bot will operate.</param>
         /// <param name="meetingHelper">Helper class which exposes methods required for meeting creation.</param>
-        public BookAMeetingBot(ConversationState conversationState, UserState userState, T dialog, ITokenHelper tokenHelper, IActivityStorageProvider activityStorageProvider, IFavoriteStorageProvider favoriteStorageProvider, IMeetingProvider meetingProvider, TelemetryClient telemetryClient, IUserConfigurationStorageProvider userConfigurationStorageProvider, string appBaseUri, string instrumentationKey, IMeetingHelper meetingHelper)
+        public BookAMeetingBot(ConversationState conversationState, UserState userState, T dialog, ITokenHelper tokenHelper, IActivityStorageProvider activityStorageProvider, IFavoriteStorageProvider favoriteStorageProvider, IMeetingProvider meetingProvider, TelemetryClient telemetryClient, IUserConfigurationStorageProvider userConfigurationStorageProvider, string appBaseUri, string instrumentationKey, IMeetingHelper meetingHelper, ConcurrentDictionary<string, ConversationReference> conversationReferences)
         {
             this.conversationState = conversationState;
             this.userState = userState;
@@ -129,6 +132,7 @@ namespace Microsoft.Teams.Apps.BookAThing.Bots
             this.appBaseUri = appBaseUri;
             this.instrumentationKey = instrumentationKey;
             this.meetingHelper = meetingHelper;
+            _conversationReferences = conversationReferences;
         }
 
         /// <summary>
@@ -272,6 +276,10 @@ namespace Microsoft.Teams.Apps.BookAThing.Bots
             var token = this.tokenHelper.GenerateAPIAuthToken(activity.From.AadObjectId, activity.ServiceUrl, activity.From.Id, jwtExpiryMinutes: 60);
             string activityReferenceId = string.Empty;
 
+            // add conference to send proactive message and fix submit task bug in IOS
+            var conversationReference = activity.GetConversationReference();
+            _conversationReferences.AddOrUpdate(conversationReference.User.AadObjectId, conversationReference, (key, newValue) => conversationReference);
+
             switch (command.ToUpperInvariant())
             {
                 // Show task module to manage favorite rooms which is invoked from 'Favorite rooms' list card.
@@ -295,7 +303,7 @@ namespace Microsoft.Teams.Apps.BookAThing.Bots
 
                 case BotCommands.ShareMeetingRoom:
                     var url = JObject.Parse(taskModuleRequest.Data.ToString()).SelectToken("url").ToString();
-                    return this.GetTaskModuleResponse(url, Strings.ShareMeetingRoom,1130,800);
+                    return this.GetTaskModuleResponse(url, Strings.ShareMeetingRoom, 1130, 800);
 
                 default:
                     var reply = MessageFactory.Text(Strings.CommandNotRecognized.Replace("{command}", command, StringComparison.OrdinalIgnoreCase));
@@ -542,7 +550,7 @@ namespace Microsoft.Teams.Apps.BookAThing.Bots
         /// <param name="url">Task module URL.</param>
         /// <param name="title">Title for task module.</param>
         /// <returns>TaskModuleResponse object.</returns>
-        private TaskModuleResponse GetTaskModuleResponse(string url, string title,int width =600,int height = 460)
+        private TaskModuleResponse GetTaskModuleResponse(string url, string title, int width = 600, int height = 460)
         {
             return new TaskModuleResponse
             {

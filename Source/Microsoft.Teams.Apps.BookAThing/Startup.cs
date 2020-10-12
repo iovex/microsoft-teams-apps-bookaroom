@@ -5,6 +5,7 @@
 namespace Microsoft.Teams.Apps.BookAThing
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Net.Http;
     using System.Text;
@@ -18,7 +19,9 @@ namespace Microsoft.Teams.Apps.BookAThing
     using Microsoft.Bot.Builder.Integration.AspNet.Core;
     using Microsoft.Bot.Connector;
     using Microsoft.Bot.Connector.Authentication;
+    using Microsoft.Bot.Schema;
     using Microsoft.Extensions.Caching.Memory;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.IdentityModel.Tokens;
     using Microsoft.Teams.Apps.BookAThing.Bots;
@@ -43,7 +46,7 @@ namespace Microsoft.Teams.Apps.BookAThing
         /// Initializes a new instance of the <see cref="Startup"/> class.
         /// </summary>
         /// <param name="configuration">Configuration settings.</param>
-        public Startup(Extensions.Configuration.IConfiguration configuration)
+        public Startup(IConfiguration configuration)
         {
             this.Configuration = configuration;
         }
@@ -51,7 +54,7 @@ namespace Microsoft.Teams.Apps.BookAThing
         /// <summary>
         /// Gets Configurations Interfaces.
         /// </summary>
-        public Extensions.Configuration.IConfiguration Configuration { get; }
+        public IConfiguration Configuration { get; }
 
         /// <summary>
         /// This method gets called by the runtime. Use this method to add services to the container.
@@ -110,6 +113,9 @@ namespace Microsoft.Teams.Apps.BookAThing
 
             services.AddSingleton<MemoryCache>();
 
+            // Create a global hashset for our ConversationReferences
+            services.AddSingleton<ConcurrentDictionary<string, ConversationReference>>();
+
             // The Dialog that will be run by the bot.
             services.AddSingleton<MainDialog>();
 
@@ -126,7 +132,7 @@ namespace Microsoft.Teams.Apps.BookAThing
                 (IUserConfigurationStorageProvider)provider.GetService(typeof(IUserConfigurationStorageProvider)),
                 this.Configuration["AppBaseUri"],
                 this.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"],
-                (IMeetingHelper)provider.GetService(typeof(IMeetingHelper))));
+                (IMeetingHelper)provider.GetService(typeof(IMeetingHelper)),(ConcurrentDictionary<string, ConversationReference>)provider.GetService(typeof(ConcurrentDictionary<string, ConversationReference>))));
         }
 
         /// <summary>

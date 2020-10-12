@@ -520,8 +520,27 @@ class AddFavorites extends React.Component<IAddFavoriteProps, IState>
         else if (favoriteSaveResult.status === 200) {
             this.appInsights.trackEvent({ name: `Favorites updated` }, { User: this.userObjectId });
             if (favoriteSaveResult !== null) {
-                let toBot = { Text: "fav closed", ReplyTo: this.replyTo };
-                microsoftTeams.tasks.submitTask(toBot);
+                microsoftTeams.getContext(async (context) => {
+                    console.log("hostClientType:" + context.hostClientType);
+                    if (context.hostClientType === "ios") {
+                        let toBotIOS = { Text: "fav closed", ReplyTo: this.replyTo, UserAdObjectId: context.userObjectId };
+                        const resIOS = await fetch("/api/NotifyApi/SubmitTaskForIOS", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": "Bearer " + this.token
+                            },
+                            body: JSON.stringify(toBotIOS)
+                        });
+
+                        if (resIOS.status === 200) {
+                            console.log("sucess to submit ios task");
+                        }
+                    }
+                    let toBot = { Text: "fav closed", ReplyTo: this.replyTo };
+                    microsoftTeams.tasks.submitTask(toBot);
+
+                });
             }
             else {
                 self.setMessage(this.state.resourceStrings.ExceptionResponse, Constants.ErrorMessageRedColor, false);
